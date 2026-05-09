@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learning Game</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .game-box {
+    background: white;
+    border-radius: 24px;
+    padding: 32px;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .start-screen {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+  }
+  .start-screen h1 {
+    font-size: 32px;
+    color: #667eea;
+  }
+  .start-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 16px 48px;
+    font-size: 20px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .game-screen { display: none; }
+  .top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #555;
+  }
+  .score { font-weight: bold; color: #667eea; font-size: 16px; }
+  .music-btn {
+    background: none;
+    border: 2px solid #667eea;
+    border-radius: 20px;
+    padding: 4px 12px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  .level-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  .word {
+    font-size: 42px;
+    font-weight: bold;
+    color: #667eea;
+    margin: 16px 0 24px;
+  }
+  .options {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin: 16px 0;
+  }
+  .opt {
+    font-size: 52px;
+    cursor: pointer;
+    border: 5px solid #a0c4ff;
+    border-radius: 16px;
+    padding: 10px;
+    transition: transform 0.1s;
+    background: #f5f5f5;
+  }
+  .opt:hover { transform: scale(1.1); }
+  .message {
+    font-size: 18px;
+    font-weight: bold;
+    min-height: 28px;
+    margin: 10px 0;
+  }
+  .next-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 12px 32px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 10px;
+    width: 100%;
+  }
+  @keyframes celebrate {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.5); }
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+  .celebrate { animation: celebrate 0.5s ease; }
+  .shake { animation: shake 0.4s ease; }
+</style>
+</head>
+<body>
+<div class="game-box">
+  <div class="start-screen" id="startScreen">
+    <h1>🎮 Learning Game</h1>
+    <p style="color: #666; font-size: 16px;">Pick the right picture for each word!</p>
+    <button class="start-btn" onclick="startGame()">▶️ Start Game</button>
+  </div>
+
+  <div class="game-screen" id="gameScreen">
+    <div class="top-bar">
+      <span class="score">Score: <span id="score">0</span></span>
+      <button class="music-btn" onclick="toggleMusic()" id="musicBtn">🎵 Music</button>
+    </div>
+    <div class="level-title" id="levelTitle"></div>
+    <div class="word" id="wordDisplay"></div>
+    <div class="options" id="options"></div>
+    <div class="message" id="message"></div>
+    <button class="next-btn" onclick="nextLevel()">Next Level →</button>
+  </div>
+</div>
+
+<script>
+const levels = [
+  {
+    title: '🐾 Animals',
+    questions: [
+      { word: 'Dog',   correct: '🐶', options: ['🐶','🐱','🐭'] },
+      { word: 'Cat',   correct: '🐱', options: ['🐶','🐱','🐰'] },
+      { word: 'Horse', correct: '🐴', options: ['🐴','🐮','🐷'] },
+      { word: 'Bear',  correct: '🐻', options: ['🦊','🐻','🐼'] },
+    ]
+  },
+  {
+    title: '🍎 Fruits',
+    questions: [
+      { word: 'Apple',      correct: '🍎', options: ['🍎','🍌','🍇'] },
+      { word: 'Banana',     correct: '🍌', options: ['🍊','🍌','🍓'] },
+      { word: 'Grapes',     correct: '🍇', options: ['🍇','🍉','🍑'] },
+      { word: 'Watermelon', correct: '🍉', options: ['🍋','🍉','🍒'] },
+    ]
+  },
+  {
+    title: '🚗 Vehicles',
+    questions: [
+      { word: 'Car',      correct: '🚗', options: ['🚗','🚌','🚲'] },
+      { word: 'Bus',      correct: '🚌', options: ['🚕','🚌','✈️'] },
+      { word: 'Airplane', correct: '✈️', options: ['🚀','🚁','✈️'] },
+      { word: 'Bicycle',  correct: '🚲', options: ['🚲','🛵','🚂'] },
+    ]
+  }
+];
+
+let currentLevel = 0, currentQ = 0, score = 0;
+let audioCtx = null, musicPlaying = false, musicInterval = null;
+
+function startGame() {
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('gameScreen').style.display = 'block';
+  initAudio();
+  loadQuestion();
+}
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playTone(freq, duration, type = 'sine', volume = 0.3) {
+  if (!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.connect(g);
+  g.connect(audioCtx.destination);
+  o.type = type;
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(volume, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  o.start();
+  o.stop(audioCtx.currentTime + duration);
+}
+
+function playSuccess() {
+  const notes = [523, 659, 784, 1047];
+  notes.forEach((f, i) => {
+    setTimeout(() => playTone(f, 0.2, 'sine', 0.2), i * 100);
+  });
+}
+
+function playError() {
+  playTone(200, 0.4, 'sawtooth', 0.15);
+}
+
+function startMusic() {
+  if (musicInterval) clearInterval(musicInterval);
+  const notes = [261, 294, 329, 349, 392, 440, 494, 523];
+  let i = 0;
+  musicInterval = setInterval(() => {
+    if (musicPlaying) {
+      playTone(notes[i % notes.length], 0.3, 'sine', 0.1);
+      i++;
+    }
+  }, 400);
+}
+
+function toggleMusic() {
+  musicPlaying = !musicPlaying;
+  document.getElementById('musicBtn').textContent = musicPlaying ? '🔇 Off' : '🎵 Music';
+  if (musicPlaying) {
+    startMusic();
+  } else {
+    if (musicInterval) clearInterval(musicInterval);
+  }
+}
+
+function loadQuestion() {
+  const q = levels[currentLevel].questions[currentQ];
+  document.getElementById('levelTitle').textContent =
+    `${levels[currentLevel].title} — Question ${currentQ + 1} of ${levels[currentLevel].questions.length}`;
+  document.getElementById('wordDisplay').textContent = q.word;
+  document.getElementById('message').textContent = '';
+
+  const shuffled = [...q.options].sort(() => Math.random() - 0.5);
+  const container = document.getElementById('options');
+  container.innerHTML = '';
+  shuffled.forEach(emoji => {
+    const btn = document.createElement('button');
+    btn.className = 'opt';
+    btn.textContent = emoji;
+    btn.onclick = () => checkAnswer(btn, emoji, q.correct);
+    container.appendChild(btn);
+  });
+}
+
+function checkAnswer(btn, chosen, correct) {
+  if (chosen === correct) {
+    btn.classList.add('celebrate');
+    document.getElementById('message').textContent = '✅ Great job!';
+    document.getElementById('message').style.color = '#22c55e';
+    score++;
+    document.getElementById('score').textContent = score;
+    playSuccess();
+    setTimeout(() => {
+      btn.classList.remove('celebrate');
+      currentQ++;
+      if (currentQ < levels[currentLevel].questions.length) {
+        loadQuestion();
+      } else {
+        document.getElementById('wordDisplay').textContent = '🎉';
+        document.getElementById('message').textContent = 'Level Complete!';
+        document.getElementById('options').innerHTML = '';
+      }
+    }, 1000);
+  } else {
+    btn.classList.add('shake');
+    document.getElementById('message').textContent = '❌ Try again';
+    document.getElementById('message').style.color = '#ef4444';
+    playError();
+    setTimeout(() => btn.classList.remove('shake'), 400);
+  }
+}
+
+function nextLevel() {
+  currentLevel = (currentLevel + 1) % levels.length;
+  currentQ = 0;
+  loadQuestion();
+}
+</script>
+</body>
+</html>
